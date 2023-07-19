@@ -1,9 +1,9 @@
-use SIZE_WIDTH;
-use SIZE_HEIGHT;
+use SCREEN_WIDTH;
+use SCREEN_HEIGHT;
 
 struct Chip8 {
     memory: [u8; 4096],
-    video: [[u8; SIZE_WIDTH]; SIZE_HEIGHT],
+    video: [[bool; SCREEN_WIDTH]; SCREEN_HEIGHT],
     registers: [u8; 16],
     i_reg: u16,
     delay_timer: u8,
@@ -17,7 +17,7 @@ impl Chip8 {
     fn init() -> self {
         Chip8 {
             memory: [0; 4096],
-            video: [[0; SIZE_WIDTH]; SIZE_HEIGHT],
+            video: [[0; SCREEN_WIDTH]; SCREEN_HEIGHT],
             registers: [0; 16],
             i_reg: 0,
             delay_timer: 0,

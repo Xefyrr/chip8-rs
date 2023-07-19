@@ -1,5 +1,5 @@
 [package]
-name = "rs_chip_8"
+name = "chip8-rs"
 version = "0.1.0"
 edition = "2021"
 
