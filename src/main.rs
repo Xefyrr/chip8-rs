@@ -3,6 +3,8 @@ extern crate sdl2;
 mod chip8;
 use chip8::Chip8;
 
+use sdl2::pixels::Color;
+use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 
@@ -31,7 +33,7 @@ fn main() {
 
     let mut chip8 = Chip8::init();
 
-    let mut rom = File::open(&args[1]).expect("Unable to open file!");
+    let mut rom = File::open("./roms/IBM Logo.ch8").expect("Unable to open file!");
     let mut buffer = Vec::new();
 
     rom.read_to_end(&mut buffer).unwrap();
@@ -56,4 +58,20 @@ fn draw(chip8: &Chip8, canvas: &mut Canvas<Window>) {
     // 1. Clear canvas
     // 2. Loop through screen
     // 3. Create scaled rectangles where pixels on the chip8 are true
+    canvas.set_draw_color(Color::RGB(0, 0, 0));
+    canvas.clear();
+
+    let chip8_screen = chip8.get_video_memory();
+
+    canvas.set_draw_color(Color::RGB(255, 255, 255));
+
+    for (y, row) in chip8_screen.iter().enumerate() {
+        for (x, &col) in row.iter().enumerate() {
+            if chip8_screen[y][x] {
+                let _ = canvas.fill_rect(Rect::new((x as u32 * WINDOW_SCALE) as i32, (y as u32 * WINDOW_SCALE) as i32, WINDOW_SCALE, WINDOW_SCALE));
+            }
+        }
+    }
+
+    canvas.present();
 }
