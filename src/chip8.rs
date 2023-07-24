@@ -89,8 +89,8 @@ impl Chip8 {
 
         let nnn = (op & 0x0FFF);
         let nn = (op & 0x00FF) as u8;
-        let x = nibbles.1 as usize;
-        let y = nibbles.2 as usize;
+        let x = nibbles.1;
+        let y = nibbles.2;
         let n = nibbles.3;
 
         match nibbles {
@@ -106,12 +106,12 @@ impl Chip8 {
 
             // LD Vx, nn
             (0x6, _, _, _) => {
-                self.registers[x] = nn;
+                self.registers[x as usize] = nn;
             },
 
             // ADD
             (0x7, _, _, _) => {
-                self.registers[x] += nn;
+                self.registers[x as usize] += nn;
             },
 
             // LD I, addr
@@ -121,31 +121,24 @@ impl Chip8 {
             
             // DRW Vx, Vy, n
             (0xD, _, _, _) => {
-                let x_coord = (self.registers[x] % (SCREEN_WIDTH as u8)) as usize;
-                let y_coord = (self.registers[y] % (SCREEN_HEIGHT as u8)) as usize;
-
                 self.registers[0xF] = 0;
-                let mut has_flipped = false;
+                let mut collision = false;
 
                 for col in 0..n {
+                    let y_coord = ((self.registers[y as usize] as u16 + col) as usize) % SCREEN_HEIGHT;
                     let sprite = self.memory[(self.i_reg + col) as usize];
 
                     for row in 0..8 {
+                        let x_coord = ((self.registers[x as usize] as u16 + row) as usize) % SCREEN_WIDTH;
                         let pixel = ((sprite >> 7 - row) & 1) == 1;
 
-                        if (pixel) {
-                            has_flipped = self.video[y_coord + col as usize][x_coord + row] && pixel;
-                            self.video[y_coord + col as usize][x_coord + row] ^= pixel;
-                        }
-
+                        collision = self.video[y_coord][x_coord] && pixel;
+                        self.video[y_coord][x_coord] ^= pixel;
                     }
                 }
 
-                if has_flipped {
+                if collision {
                     self.registers[0xF] = 1;
-                }
-                else {
-                    self.registers[0xF] = 0;
                 }
             }
 
