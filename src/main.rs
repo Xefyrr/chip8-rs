@@ -24,6 +24,11 @@ const WINDOW_HEIGHT: u32 = (SCREEN_HEIGHT as u32) * WINDOW_SCALE;
 fn main() {
     let args: Vec<_> = env::args().collect();
 
+    if args.len() < 2 {
+        println!("No ROM Specified. Exiting...");
+        return;
+    }
+
     let sdl_context = sdl2::init().unwrap();
     let video_subsys = sdl_context.video().unwrap();
     let _window = video_subsys.window("CHIP-8 Emulator", WINDOW_WIDTH, WINDOW_HEIGHT).position_centered().opengl().build().expect("Unable to initialise window!");
@@ -33,7 +38,7 @@ fn main() {
 
     let mut chip8 = Chip8::init();
 
-    let mut rom = File::open("./roms/IBM Logo.ch8").expect("Unable to open file!");
+    let mut rom = File::open(&args[1]).expect("Unable to open file!");
     let mut buffer = Vec::new();
 
     rom.read_to_end(&mut buffer).unwrap();
@@ -55,9 +60,6 @@ fn main() {
 }
 
 fn draw(chip8: &Chip8, canvas: &mut Canvas<Window>) {
-    // 1. Clear canvas
-    // 2. Loop through screen
-    // 3. Create scaled rectangles where pixels on the chip8 are true
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     canvas.clear();
 
@@ -66,7 +68,7 @@ fn draw(chip8: &Chip8, canvas: &mut Canvas<Window>) {
     canvas.set_draw_color(Color::RGB(255, 255, 255));
 
     for (y, row) in chip8_screen.iter().enumerate() {
-        for (x, &col) in row.iter().enumerate() {
+        for (x, &_col) in row.iter().enumerate() {
             if chip8_screen[y][x] {
                 let _ = canvas.fill_rect(Rect::new((x as u32 * WINDOW_SCALE) as i32, (y as u32 * WINDOW_SCALE) as i32, WINDOW_SCALE, WINDOW_SCALE));
             }
