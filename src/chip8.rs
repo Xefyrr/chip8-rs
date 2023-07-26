@@ -36,6 +36,7 @@ pub struct Chip8 {
     pc: u16,
     sp: u8,
     stack: [u16; 16],
+    keyboard: [bool; 16],
 }
 
 impl Chip8 {
@@ -50,6 +51,7 @@ impl Chip8 {
             pc: 0x200,
             sp: 0,
             stack: [0; 16],
+            keyboard: [false; 16],
         };
 
         for i in 0..FONT_SIZE {
@@ -57,6 +59,12 @@ impl Chip8 {
         }
 
         chip8
+    }
+
+    pub fn set_keypress_state(&mut self, key: usize, pressed: bool) {
+        if key < 16 {
+            self.keyboard[key] = pressed;
+        }
     }
 
     pub fn get_video_memory(&self) -> &[[bool; SCREEN_WIDTH]; SCREEN_HEIGHT] {
@@ -276,12 +284,16 @@ impl Chip8 {
 
             // SKP Vx
             (0xE, _, 0x9, 0xE) => {
-                // TODO: After implementing keyboard.
+                if self.keyboard[self.registers[x] as usize] {
+                    self.pc += 2;
+                }
             },
 
             // SKNP Vx
             (0xE, _, 0xA, 0x1) => {
-                // TODO: After implementing keyboard.
+                if !self.keyboard[self.registers[x] as usize] {
+                    self.pc += 2;
+                }
             },
 
             // LD Vx, DT
@@ -291,7 +303,20 @@ impl Chip8 {
 
             // LD Vx, K
             (0xF, _, 0x0, 0xA) => {
-                // TODO: After implementing keyboard.
+                let mut key_pressed = false;
+
+                for i in 0..self.keyboard.len() {
+                    if self.keyboard[i] {
+                        self.registers[x] = i as u8;
+                        key_pressed = true;
+
+                        break;
+                    }
+                }
+
+                if !key_pressed {
+                    self.pc -= 2;
+                }
             },
 
             // LD DT, Vx

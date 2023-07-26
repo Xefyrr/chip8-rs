@@ -7,6 +7,7 @@ use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
+use sdl2::keyboard::Keycode;
 
 use std::fs::File;
 use std::io::Read;
@@ -50,12 +51,44 @@ fn main() {
                 Event::Quit {..} => {
                     break 'running;
                 },
-                _ => {}
+                Event::KeyDown {keycode: Some(key), ..} => {
+                    if let Some(k) = process_keycode(key) {
+                        chip8.set_keypress_state(k, true);
+                    }
+                },
+                Event::KeyUp {keycode: Some(key), ..} => {
+                    if let Some(k) = process_keycode(key) {
+                        chip8.set_keypress_state(k, false);
+                    }
+                },
+                _ => {},
             }
         }
         
         chip8.tick();
         draw(&chip8, &mut canvas);
+    }
+}
+
+fn process_keycode(key: Keycode) -> Option<usize> {
+    match key {
+        Keycode::Num1 => Some(0x1),
+        Keycode::Num2 => Some(0x2),
+        Keycode::Num3 => Some(0x3),
+        Keycode::Num4 => Some(0xC),
+        Keycode::Q => Some(0x4),
+        Keycode::W => Some(0x5),
+        Keycode::E => Some(0x6),
+        Keycode::R => Some(0xD),
+        Keycode::A => Some(0x7),
+        Keycode::S => Some(0x8),
+        Keycode::D => Some(0x9),
+        Keycode::F => Some(0xE),
+        Keycode::Z => Some(0xA),
+        Keycode::X => Some(0x0),
+        Keycode::C => Some(0xB),
+        Keycode::V => Some(0xF),
+        _ => None,
     }
 }
 
