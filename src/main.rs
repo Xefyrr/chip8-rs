@@ -53,12 +53,12 @@ fn main() {
                 },
                 Event::KeyDown {keycode: Some(key), ..} => {
                     if let Some(k) = process_keycode(key) {
-                        chip8.set_keypress_state(k, true);
+                        chip8.key_down(k);
                     }
                 },
                 Event::KeyUp {keycode: Some(key), ..} => {
                     if let Some(k) = process_keycode(key) {
-                        chip8.set_keypress_state(k, false);
+                        chip8.key_up(k);
                     }
                 },
                 _ => {},

@@ -61,9 +61,15 @@ impl Chip8 {
         chip8
     }
 
-    pub fn set_keypress_state(&mut self, key: usize, pressed: bool) {
+    pub fn key_down(&mut self, key: usize) {
         if key < 16 {
-            self.keyboard[key] = pressed;
+            self.keyboard[key] = true;
+        }
+    }
+
+    pub fn key_up(&mut self, key: usize) {
+        if key < 16 {
+            self.keyboard[key] = false;
         }
     }
 
