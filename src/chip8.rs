@@ -205,46 +205,34 @@ impl Chip8 {
 
             // SUB Vx, Vy
             (0x8, _, _, 0x5) => {
-                let (num, overflow) = self.registers[x].overflowing_sub(self.registers[y]);
+                let vf_val = if self.registers[x] > self.registers[y] { 1 } else { 0 };
 
-                if overflow {
-                    self.registers[0xF] = 0;
-                }
-                else {
-                    self.registers[0xF] = 1;
-                }
-
-                self.registers[x] = num;
+                self.registers[x] = self.registers[x].wrapping_sub(self.registers[y]);
+                self.registers[0xF] = vf_val; 
             },
 
             // SHR Vx {, Vy}
             (0x8, _, _, 0x6) => {
                 let lsb = self.registers[x] & 1;
 
-                self.registers[0xF] = lsb;
                 self.registers[x] >>= 1;
+                self.registers[0xF] = lsb;
             },
 
             // SUBN Vx, Vy
             (0x8, _, _, 0x7) => {
-                let (num, overflow) = self.registers[y].overflowing_sub(self.registers[x]);
+                let vf_val = if self.registers[y] > self.registers[x] { 1 } else { 0 };
 
-                if overflow {
-                    self.registers[0xF] = 0;
-                }
-                else {
-                    self.registers[0xF] = 1;
-                }
-
-                self.registers[x] = num;
+                self.registers[x] = self.registers[y].wrapping_sub(self.registers[x]);
+                self.registers[0xF] = vf_val; 
             },
 
             // SHL Vx {, Vy}
             (0x8, _, _, 0xE) => {
                 let msb = (self.registers[x] >> 7) & 1;
 
-                self.registers[0xF] = msb;
                 self.registers[x] <<= 1;
+                self.registers[0xF] = msb;
             },
 
             // SNE Vx, Vy
