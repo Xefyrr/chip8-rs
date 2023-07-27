@@ -164,7 +164,9 @@ impl Chip8 {
 
             // ADD Vx, nn
             (0x7, _, _, _) => {
-                self.registers[x] += nn;
+                let num = self.registers[x] as u16 + nn as u16;
+                
+                self.registers[x] = num as u8;
             },
 
             // LD Vx, Vy
@@ -189,9 +191,9 @@ impl Chip8 {
 
             // ADD Vx, Vy
             (0x8, _, _, 0x4) => {
-                let num = (self.registers[x] + self.registers[y]) as u16;
+                let num = self.registers[x] as u16 + self.registers[y] as u16;
 
-                self.registers[x] = (num & 0x00FF) as u8;
+                self.registers[x] = num as u8;
 
                 if num > 255 {
                     self.registers[0xF] = 1;
@@ -203,14 +205,16 @@ impl Chip8 {
 
             // SUB Vx, Vy
             (0x8, _, _, 0x5) => {
-                if self.registers[x] > self.registers[y] {
-                    self.registers[0xF] = 1;
-                }
-                else {
+                let (num, overflow) = self.registers[x].overflowing_sub(self.registers[y]);
+
+                if overflow {
                     self.registers[0xF] = 0;
                 }
+                else {
+                    self.registers[0xF] = 1;
+                }
 
-                self.registers[x] -= self.registers[y];
+                self.registers[x] = num;
             },
 
             // SHR Vx {, Vy}
@@ -223,14 +227,16 @@ impl Chip8 {
 
             // SUBN Vx, Vy
             (0x8, _, _, 0x7) => {
-                if self.registers[y] > self.registers[x] {
-                    self.registers[0xF] = 1;
-                }
-                else {
+                let (num, overflow) = self.registers[y].overflowing_sub(self.registers[x]);
+
+                if overflow {
                     self.registers[0xF] = 0;
                 }
+                else {
+                    self.registers[0xF] = 1;
+                }
 
-                self.registers[x] = self.registers[y] - self.registers[x];
+                self.registers[x] = num;
             },
 
             // SHL Vx {, Vy}
