@@ -37,6 +37,7 @@ pub struct Chip8 {
     sp: u8,
     stack: [u16; 16],
     keyboard: [bool; 16],
+    update_screen: bool,
 }
 
 impl Chip8 {
@@ -52,6 +53,7 @@ impl Chip8 {
             sp: 0,
             stack: [0; 16],
             keyboard: [false; 16],
+            update_screen: false,
         };
 
         for i in 0..FONT_SIZE {
@@ -71,6 +73,23 @@ impl Chip8 {
         if key < 16 {
             self.keyboard[key] = false;
         }
+    }
+
+    pub fn update_timers(&mut self) {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        }
+    }
+
+    pub fn get_update_status(&mut self) -> bool {
+        let val = self.update_screen;
+
+        self.update_screen = false;
+        val
     }
 
     pub fn get_video_memory(&self) -> &[[bool; SCREEN_WIDTH]; SCREEN_HEIGHT] {
@@ -115,6 +134,7 @@ impl Chip8 {
             // CLS
             (0x0, 0x0, 0xE, 0x0) => {
                 self.video = [[false; SCREEN_WIDTH]; SCREEN_HEIGHT];
+                self.update_screen = true;
             },
 
             // RET
@@ -177,16 +197,22 @@ impl Chip8 {
             // OR Vx, Vy
             (0x8, _, _, 0x1) => {
                 self.registers[x] |= self.registers[y];
+
+                self.registers[0xF] = 0;
             },
 
             // AND Vx, Vy
             (0x8, _, _, 0x2) => {
                 self.registers[x] &= self.registers[y];
+
+                self.registers[0xF] = 0;
             },
 
             // XOR Vx, Vy
             (0x8, _, _, 0x3) => {
                 self.registers[x] ^= self.registers[y];
+
+                self.registers[0xF] = 0;
             },
 
             // ADD Vx, Vy
@@ -213,6 +239,8 @@ impl Chip8 {
 
             // SHR Vx {, Vy}
             (0x8, _, _, 0x6) => {
+                self.registers[x] = self.registers[y];
+
                 let lsb = self.registers[x] & 1;
 
                 self.registers[x] >>= 1;
@@ -229,6 +257,8 @@ impl Chip8 {
 
             // SHL Vx {, Vy}
             (0x8, _, _, 0xE) => {
+                self.registers[x] = self.registers[y];
+
                 let msb = (self.registers[x] >> 7) & 1;
 
                 self.registers[x] <<= 1;
@@ -280,6 +310,8 @@ impl Chip8 {
                 if collision {
                     self.registers[0xF] = 1;
                 }
+
+                self.update_screen = true;
             },
 
             // SKP Vx
@@ -350,19 +382,17 @@ impl Chip8 {
 
             // LD [I], Vx
             (0xF, _, 0x5, 0x5) => {
-                let mem_location = self.i_reg as usize;
-
                 for i in 0..=x {
-                    self.memory[mem_location + i]  = self.registers[i];
+                    self.memory[self.i_reg as usize]  = self.registers[i];
+                    self.i_reg += 1;
                 }
             },
 
             // LD Vx, [I]
             (0xF, _, 0x6, 0x5) => {
-                let mem_location = self.i_reg as usize;
-
                 for i in 0..=x {
-                    self.registers[i] = self.memory[mem_location + i];
+                    self.registers[i] = self.memory[self.i_reg as usize];
+                    self.i_reg += 1;
                 }
             },
 

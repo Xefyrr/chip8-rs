@@ -22,6 +22,8 @@ const WINDOW_SCALE: u32 = 20;
 const WINDOW_WIDTH: u32 = (SCREEN_WIDTH as u32) * WINDOW_SCALE;
 const WINDOW_HEIGHT: u32 = (SCREEN_HEIGHT as u32) * WINDOW_SCALE;
 
+const INSTRUCTIONS_PER_SECOND: u32 = 500;
+
 fn main() {
     let args: Vec<_> = env::args().collect();
 
@@ -46,27 +48,36 @@ fn main() {
     chip8.load_rom(&buffer);
 
     'running: loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit {..} => {
-                    break 'running;
-                },
-                Event::KeyDown {keycode: Some(key), ..} => {
-                    if let Some(k) = process_keycode(key) {
-                        chip8.key_down(k);
-                    }
-                },
-                Event::KeyUp {keycode: Some(key), ..} => {
-                    if let Some(k) = process_keycode(key) {
-                        chip8.key_up(k);
-                    }
-                },
-                _ => {},
+        for _ in 0..INSTRUCTIONS_PER_SECOND / 60 {
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::Quit {..} => {
+                        break 'running;
+                    },
+                    Event::KeyDown {keycode: Some(key), ..} => {
+                        if let Some(k) = process_keycode(key) {
+                            chip8.key_down(k);
+                        }
+                    },
+                    Event::KeyUp {keycode: Some(key), ..} => {
+                        if let Some(k) = process_keycode(key) {
+                            chip8.key_up(k);
+                        }
+                    },
+                    _ => {},
+                }
             }
+
+            chip8.tick();
         }
-        
-        chip8.tick();
-        draw(&chip8, &mut canvas);
+
+        chip8.update_timers();
+
+        let should_draw = chip8.get_update_status();
+
+        if should_draw {
+            draw(&chip8, &mut canvas);
+        }
     }
 }
 
