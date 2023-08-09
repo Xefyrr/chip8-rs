@@ -37,6 +37,8 @@ pub struct Chip8 {
     sp: u8,
     stack: [u16; 16],
     keyboard: [bool; 16],
+    keyboard_prev: [bool; 16],
+    keypress_wait: bool,
     update_screen: bool,
 }
 
@@ -53,6 +55,8 @@ impl Chip8 {
             sp: 0,
             stack: [0; 16],
             keyboard: [false; 16],
+            keyboard_prev: [false; 16],
+            keypress_wait: false,
             update_screen: false,
         };
 
@@ -105,6 +109,8 @@ impl Chip8 {
     pub fn tick(&mut self) {
         let opcode = self.fetch();
         self.execute(opcode);
+
+        self.keyboard_prev = self.keyboard;
     }
 
     fn fetch(&mut self) -> u16 {
@@ -291,24 +297,35 @@ impl Chip8 {
             
             // DRW Vx, Vy, n
             (0xD, _, _, _) => {
+                let mut y_coord = self.registers[y] as usize % SCREEN_HEIGHT;
+                
                 self.registers[0xF] = 0;
-                let mut collision = false;
 
-                for col in 0..n {
-                    let y_coord = ((self.registers[y] as u16 + col) as usize) % SCREEN_HEIGHT;
-                    let sprite = self.memory[(self.i_reg + col) as usize];
+                for i in 0..n {
+                    let mut x_coord = self.registers[x] as usize % SCREEN_WIDTH;
+                    let sprite = self.memory[(self.i_reg + i) as usize];
 
-                    for row in 0..8 {
-                        let x_coord = ((self.registers[x] as u16 + row) as usize) % SCREEN_WIDTH;
-                        let pixel = ((sprite >> 7 - row) & 1) == 1;
+                    for j in 0..8 {
+                        let pixel = ((sprite >> 7 - j) & 1) == 1;
 
-                        collision = self.video[y_coord][x_coord] && pixel;
+                        if self.video[y_coord][x_coord] && pixel {
+                            self.registers[0xF] = 1;
+                        }
+
                         self.video[y_coord][x_coord] ^= pixel;
-                    }
-                }
 
-                if collision {
-                    self.registers[0xF] = 1;
+                        x_coord += 1;
+
+                        if x_coord >= SCREEN_WIDTH {
+                            break;
+                        }
+                    }
+
+                    y_coord += 1;
+
+                    if y_coord >= SCREEN_HEIGHT {
+                        break;
+                    }
                 }
 
                 self.update_screen = true;
@@ -335,18 +352,29 @@ impl Chip8 {
 
             // LD Vx, K
             (0xF, _, 0x0, 0xA) => {
-                let mut key_pressed = false;
+                let mut key_pressed = false;            
+                let mut key_released = false;
 
                 for i in 0..self.keyboard.len() {
-                    if self.keyboard[i] {
+                    if self.keyboard_prev[i] && !self.keyboard[i] {
+                        self.keypress_wait = false;
                         self.registers[x] = i as u8;
-                        key_pressed = true;
+                        key_released = true;
 
                         break;
                     }
+                    else if !self.keyboard_prev[i] && self.keyboard[i] {
+                        self.keypress_wait = true;
+                        key_pressed = true;
+
+                         break;
+                    }
                 }
 
-                if !key_pressed {
+                if key_released {
+                    return;
+                }
+                else if !key_pressed || self.keypress_wait {
                     self.pc -= 2;
                 }
             },
