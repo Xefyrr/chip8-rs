@@ -67,6 +67,26 @@ impl Chip8 {
         chip8
     }
 
+    pub fn reset(&mut self) {
+        self.memory = [0; 4096];
+        self.video = [[false; SCREEN_WIDTH]; SCREEN_HEIGHT];
+        self.registers = [0; 16];
+        self.i_reg = 0;
+        self.delay_timer = 0;
+        self.sound_timer = 0;
+        self.pc = 0x200;
+        self.sp = 0;
+        self.stack = [0; 16];
+        self.keyboard = [false; 16];
+        self.keyboard_prev = [false; 16];
+        self.keypress_wait = false;
+        self.update_screen = false;
+
+        for i in 0..FONT_SIZE {
+            self.memory[i] = FONT_SET[i];
+        }
+    }
+
     pub fn key_down(&mut self, key: usize) {
         if key < 16 {
             self.keyboard[key] = true;
