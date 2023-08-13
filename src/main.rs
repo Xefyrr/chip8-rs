@@ -12,6 +12,7 @@ use sdl2::keyboard::Keycode;
 use std::fs::File;
 use std::io::Read;
 use std::env;
+use std::time::{Duration, Instant};
 
 use sdl2::event::Event;
 
@@ -23,6 +24,7 @@ const WINDOW_WIDTH: u32 = (SCREEN_WIDTH as u32) * WINDOW_SCALE;
 const WINDOW_HEIGHT: u32 = (SCREEN_HEIGHT as u32) * WINDOW_SCALE;
 
 const INSTRUCTIONS_PER_SECOND: u32 = 500;
+const WAIT_TIME: f64 = 1.0 / 60.0;
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -48,6 +50,8 @@ fn main() {
     chip8.load_rom(&buffer);
 
     'running: loop {
+        let time = Instant::now();
+
         for _ in 0..INSTRUCTIONS_PER_SECOND / 60 {
             for event in event_pump.poll_iter() {
                 match event {
@@ -77,6 +81,12 @@ fn main() {
 
         if should_draw {
             draw(&chip8, &mut canvas);
+        }
+
+        let seconds = time.elapsed().as_secs_f64();
+
+        if WAIT_TIME > seconds {
+            std::thread::sleep(Duration::from_secs_f64(WAIT_TIME - seconds));
         }
     }
 }
