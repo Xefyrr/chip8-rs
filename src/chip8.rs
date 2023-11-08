@@ -109,7 +109,16 @@ impl Chip8 {
         }
     }
 
-    pub fn get_update_status(&mut self) -> bool {
+    pub fn should_beep(&mut self) -> bool {
+        if self.sound_timer > 0 {
+            true
+        }
+        else {
+            false
+        }
+    }
+
+    pub fn get_screen_update_status(&mut self) -> bool {
         let val = self.update_screen;
 
         self.update_screen = false;
