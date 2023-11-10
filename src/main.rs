@@ -36,6 +36,7 @@ struct SquareWave {
 impl AudioCallback for SquareWave {
     type Channel = f32;
 
+    // Generates the square wave
     fn callback(&mut self, out: &mut [Self::Channel]) {
         for x in out.iter_mut() {
             *x = if self.phase <= 0.5 {
@@ -58,6 +59,7 @@ fn main() {
         return;
     }
 
+    // Set up SDL video and audio
     let sdl_context = sdl2::init().unwrap();
     let video_subsys = sdl_context.video().unwrap();
     let _window = video_subsys.window("CHIP-8 Emulator", WINDOW_WIDTH, WINDOW_HEIGHT).position_centered().opengl().build().expect("Unable to initialise window!");
@@ -81,6 +83,7 @@ fn main() {
         }
     }).unwrap();
 
+    // Initialises the CHIP-8 and loads the ROM
     let mut chip8 = Chip8::init();
 
     let mut rom = File::open(&args[1]).expect("Unable to open file!");
@@ -92,6 +95,7 @@ fn main() {
     'running: loop {
         let time = Instant::now();
 
+        // Runs the desired amount of instructions per second that would happen in a frame
         for _ in 0..INSTRUCTIONS_PER_SECOND / 60 {
             for event in event_pump.poll_iter() {
                 match event {
@@ -132,6 +136,8 @@ fn main() {
 
         let seconds = time.elapsed().as_secs_f64();
 
+        // If it has taken less time than it should to run the instructions in this frame
+        // Then wait for the remaining time so that it is accurate to the number of instructions that should run
         if WAIT_TIME > seconds {
             std::thread::sleep(Duration::from_secs_f64(WAIT_TIME - seconds));
         }

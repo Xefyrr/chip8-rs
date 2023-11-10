@@ -159,12 +159,14 @@ impl Chip8 {
             (op & 0x000F),
         );
 
+        // Assigns the nibbles to the relevant variables
         let nnn = op & 0x0FFF;
         let nn = (op & 0x00FF) as u8;
         let x = nibbles.1 as usize;
         let y = nibbles.2 as usize;
         let n = nibbles.3;
 
+        // Executes an instruction based on the nibble values
         match nibbles {
             // CLS
             (0x0, 0x0, 0xE, 0x0) => {
@@ -430,6 +432,7 @@ impl Chip8 {
 
             // LD B, Vx
             (0xF, _, 0x3, 0x3) => {
+                // NOTE: Change to double dabble algorithm
                 let num = self.registers[x] as f32;
 
                 self.memory[self.i_reg as usize] = (num / 100.0).floor() as u8; // Hundreds
