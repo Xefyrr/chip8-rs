@@ -5,8 +5,9 @@ use rand::Rng;
 use crate::SCREEN_WIDTH;
 use crate::SCREEN_HEIGHT;
 
-const FONT_SIZE: usize = 80;
+const USE_DOUBLE_DABBLE: bool = true;
 
+const FONT_SIZE: usize = 80;
 const FONT_SET: [u8; FONT_SIZE] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -130,7 +131,7 @@ impl Chip8 {
     }
 
     pub fn load_rom(&mut self, buf: &Vec<u8>) {
-        let start: usize = 0x200; // May be better as a const value for starting address.
+        let start: usize = 0x200; // May be better as a const value for starting address
         let end: usize = start + buf.len();
         self.memory[start..end].copy_from_slice(buf);
     }
@@ -432,12 +433,44 @@ impl Chip8 {
 
             // LD B, Vx
             (0xF, _, 0x3, 0x3) => {
-                // NOTE: Change to double dabble algorithm
-                let num = self.registers[x] as f32;
+                let hundreds: u8;
+                let tens: u8;
+                let units: u8;
 
-                self.memory[self.i_reg as usize] = (num / 100.0).floor() as u8; // Hundreds
-                self.memory[(self.i_reg + 1) as usize] = ((num / 10.0) % 10.0).floor() as u8; // Tens
-                self.memory[(self.i_reg + 2) as usize] = (num % 10.0) as u8; // Ones
+                if USE_DOUBLE_DABBLE {
+                    let mut bcd: u64 = self.registers[x] as u64;
+
+                    // Will shift left by one for every bit
+                    for _ in 0..32 {
+                        // Checks every nibble
+                        for i in (0..32).step_by(4) {
+                            // Adds three if current nibble is greater than 4
+                            if ((bcd >> (32 + i)) & 0xF) > 4 {
+                                bcd += (3 as u64) << (32 + i);
+                            }
+                        }
+    
+                        bcd <<= 1;
+                    }
+    
+                    // Moves the values to the lower 32 bits of the u64
+                    bcd >>= 32;
+    
+                    hundreds = ((bcd >> 8) & 0xF) as u8;
+                    tens = ((bcd >> 4) & 0xF) as u8;
+                    units = (bcd & 0xF) as u8;
+                }
+                else {
+                    let bcd: f64 = self.registers[x] as f64;
+
+                    hundreds = (bcd / 100.0).floor() as u8;
+                    tens = ((bcd / 10.0) % 10.0).floor() as u8;
+                    units = (bcd % 10.0) as u8;
+                }
+
+                self.memory[self.i_reg as usize] = hundreds;
+                self.memory[(self.i_reg + 1) as usize] = tens;
+                self.memory[(self.i_reg + 2) as usize] = units;
             },
 
             // LD [I], Vx
