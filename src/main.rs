@@ -51,6 +51,11 @@ impl AudioCallback for SquareWave {
     }
 }
 
+enum Keys {
+    CTRL,
+    R,
+}
+
 fn main() {
     let args: Vec<_> = env::args().collect();
 
@@ -62,9 +67,9 @@ fn main() {
     // Set up SDL video and audio
     let sdl_context = sdl2::init().unwrap();
     let video_subsys = sdl_context.video().unwrap();
-    let _window = video_subsys.window("CHIP-8 Emulator", WINDOW_WIDTH, WINDOW_HEIGHT).position_centered().opengl().build().expect("Unable to initialise window!");
+    let window = video_subsys.window("CHIP-8 Emulator", WINDOW_WIDTH, WINDOW_HEIGHT).position_centered().opengl().build().expect("Unable to initialise window!");
 
-    let mut canvas = _window.into_canvas().present_vsync().build().unwrap();
+    let mut canvas = window.into_canvas().present_vsync().build().unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
 
     let audio_subsystem = sdl_context.audio().unwrap();
@@ -92,6 +97,8 @@ fn main() {
     rom.read_to_end(&mut buffer).unwrap();
     chip8.load_rom(&buffer);
 
+    let mut keys_down: [bool; 2] = Default::default();
+
     'running: loop {
         let time = Instant::now();
 
@@ -106,17 +113,40 @@ fn main() {
                         if let Some(k) = process_keycode(key) {
                             chip8.key_down(k);
                         }
+
+                        if key == Keycode::LCtrl {
+                            keys_down[Keys::CTRL as usize] = true;
+                        }
+                        else if key == Keycode::R {
+                            keys_down[Keys::R as usize] = true;
+                        }
+                        
                     },
                     Event::KeyUp {keycode: Some(key), ..} => {
                         if let Some(k) = process_keycode(key) {
                             chip8.key_up(k);
+                        }
+
+                        if key == Keycode::LCtrl {
+                            keys_down[Keys::CTRL as usize] = false;
+                        }
+                        else if key == Keycode::R {
+                            keys_down[Keys::R as usize] = false;
                         }
                     },
                     _ => {},
                 }
             }
 
-            chip8.tick();
+            if keys_down[Keys::CTRL as usize] && keys_down[Keys::R as usize] {
+                chip8.reset();
+                draw(&chip8, &mut canvas);
+            }
+
+            if !chip8.has_done_reset()
+            {
+                chip8.tick();
+            }
         }
 
         chip8.update_timers();

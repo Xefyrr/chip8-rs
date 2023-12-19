@@ -41,6 +41,7 @@ pub struct Chip8 {
     keyboard_prev: [bool; 16],
     keypress_wait: bool,
     update_screen: bool,
+    done_reset: bool,
 }
 
 impl Chip8 {
@@ -59,6 +60,7 @@ impl Chip8 {
             keyboard_prev: [false; 16],
             keypress_wait: false,
             update_screen: false,
+            done_reset: false,
         };
 
         for i in 0..FONT_SIZE {
@@ -86,6 +88,12 @@ impl Chip8 {
         for i in 0..FONT_SIZE {
             self.memory[i] = FONT_SET[i];
         }
+
+        self.done_reset = true;
+    }
+
+    pub fn has_done_reset(&mut self) -> bool {
+        self.done_reset
     }
 
     pub fn key_down(&mut self, key: usize) {
@@ -134,6 +142,8 @@ impl Chip8 {
         let start: usize = 0x200; // May be better as a const value for starting address
         let end: usize = start + buf.len();
         self.memory[start..end].copy_from_slice(buf);
+
+        self.done_reset = false;
     }
 
     pub fn tick(&mut self) {
